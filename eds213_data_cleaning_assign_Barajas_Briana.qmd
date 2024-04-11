@@ -1,0 +1,30 @@
+---
+title: "Data Cleaning - Assignment 2"
+author: "Briana Barajas"
+date: 2024-04-17
+format: html
+---
+
+## Set-Up
+
+#### Set-up Chunk
+
+```{r}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+#### Load Libraries
+
+```{r}
+library(tidyverse)
+library(here)
+```
+
+#### Read in data
+```{r}
+
+```
+
+
+#### Read in Snow Data
+Instead of reading in the processed data, I decided to rewrite the original code for cleaning the `snow_cover` column.
