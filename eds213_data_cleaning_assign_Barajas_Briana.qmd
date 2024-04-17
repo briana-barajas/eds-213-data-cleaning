@@ -100,6 +100,32 @@ snowsurvey_clean <- snowsurvey_clean %>%
 
 ## Clean `land_cover` column
 
-#### Managing NA Values
+Since the following steps have been the same for the previous columns, I combined them all into one step for land cover. I began by assessing potential NA values, and converting characters to NA as needed. Then, I converted `land_cover` to a numeric column, which made it easier to check the values that were not between 0-100%. There were two values for `land_cover` that were less than zero. I coerced -298 to NA since the other values available did not properly add up to 100. For -100, the value of water cover was zero, and snow cover was NA. In this case I felt like an accident was clearly made in adding a negative sign, so I changed land cover to be 100, and snow cover to be zero.
 
-I wanted to begin by exploring the values in the `water_cover` column. To avoid having lengthy outputs in the rendered document, I have the exploratory chunk set to `eval = FALSE`. The water cover column had many of the same character strings seen in the snow cover, so I followed the same steps to convert them to NA.
+```{r}
+# check data type and NA values
+# class(snowsurvey_clean$land_cover)
+# unique(snowsurvey_clean$land_cover)
+
+snowsurvey_clean <- snowsurvey_clean %>% 
+  # convert symbols into NAs
+  mutate(land_cover = ifelse(land_cover %in% c(".", "-", "n/a", "unk"), 
+                             NA, land_cover)) %>% 
+  
+  # correct data type
+  mutate(land_cover = as.numeric(land_cover))
+
+# check percentages
+# snowsurvey_clean %>% filter(land_cover > 100 | land_cover < 0) %>% 
+# head(10)
+
+# change -298 to NA
+snowsurvey_clean <- snowsurvey_clean %>% 
+  mutate(land_cover = ifelse(land_cover == -298, NA, land_cover))
+
+# manually update row for -100 land cover
+snowsurvey_clean$snow_cover[223] <- 0
+snowsurvey_clean$land_cover[223] <- 100
+```
+
+## Infer Missing Values
