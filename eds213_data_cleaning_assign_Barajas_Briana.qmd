@@ -7,6 +7,8 @@ format: html
 
 ## Set-Up
 
+**Github URL:** <https://github.com/briana-barajas/eds-213-data-cleaning>
+
 ```{r, include=FALSE}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 ```
@@ -129,3 +131,59 @@ snowsurvey_clean$land_cover[223] <- 100
 ```
 
 ## Infer Missing Values
+
+#### Managing NA Values
+
+To start, I cleaned the `total_cover` column in the same manner as all the previous column. For some strange reason, one value of total cover was a string of characters and numbers so it needed to be added to the list of NAs. I decided to remove columns where all three variables (land cover, snow cover, and water cover) were NA as these did not tell us much about the conditions that day. Finally, there was a single total_cover value above 100 which I decided to remove. While there were multiple values under 100, it felt excessive to remove them since there were far more entries that fit this description. Additionally, many of the columns added up correctly, just not to 100.
+
+```{r}
+snowsurvey_clean <- snowsurvey_clean %>% 
+  
+  # remove recognized NAs
+  mutate(total_cover = ifelse(total_cover %in% c(".", "-", "n/a", "unk"), NA, total_cover)) %>% 
+  
+  # remove strange string by removing anything that contains "row"
+  mutate(total_cover = ifelse(str_detect(total_cover, "row"), NA, total_cover)) %>% 
+  
+  # remove columns where all values are NA
+  filter(!is.na(snow_cover) | !is.na(water_cover) | !is.na(land_cover)) %>% 
+  
+  # convert column to numeric
+  mutate(total_cover = as.numeric(total_cover)) %>% 
+  
+  # remove column above 100
+  filter(total_cover <= 100)
+
+```
+
+**Missing Values**
+
+I only wanted to infer values if a single one was missing. To do this, I used an `is.na()` search within the `ifelse()` function. This method allows me to only predict values where the one column is missing, meaning they could be more accurately estimated. I did this for each of the variables, creating new columns to preserve the original data. Once the cover variables were inferred, I re-calculated the total_cover for each entry.
+
+```{r}
+snowsurvey_clean <- snowsurvey_clean %>% 
+
+  # estimate snow cover values
+  mutate(snow_cover_est = ifelse(is.na(snow_cover), 
+                                  total_cover - (water_cover + land_cover),
+                                  snow_cover),
+         
+         # estimate water cover values
+         water_cover_est = ifelse(is.na(water_cover),
+                                   total_cover - (snow_cover + land_cover),
+                                   water_cover),
+         
+         # estimate land cover values
+         land_cover_est = ifelse(is.na(land_cover),
+                                  total_cover - (snow_cover + land_cover),
+                                  land_cover)) %>% 
+  
+  # calculate new total using estimated values
+  mutate(new_total = snow_cover_est + water_cover_est + land_cover_est)
+```
+
+## Write CSV
+
+```{r}
+write_csv(snowsurvey_clean, here("data", "processed", "all_cover_fixed_BRIANA.csv"))
+```
