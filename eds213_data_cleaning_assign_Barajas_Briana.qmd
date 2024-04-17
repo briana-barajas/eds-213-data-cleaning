@@ -7,24 +7,99 @@ format: html
 
 ## Set-Up
 
-#### Set-up Chunk
-
-```{r}
+```{r, include=FALSE}
 knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 ```
 
-#### Load Libraries
+### Load Libraries
 
-```{r}
+```{r, results='hide'}
+# load libraries
 library(tidyverse)
 library(here)
+library(janitor)
+
+# read in data
+snowsurvey_raw <- read_csv(here("data", "raw", "ASDN_Snow_survey.csv")) %>% clean_names()
 ```
 
-#### Read in data
-```{r}
+### Clean `snow_cover` column
 
-```
-
-
-#### Read in Snow Data
 Instead of reading in the processed data, I decided to rewrite the original code for cleaning the `snow_cover` column.
+
+```{r}
+snowsurvey_clean <- snowsurvey_raw %>% 
+  
+  # change select symbols to NA
+  mutate(snow_cover = ifelse(snow_cover %in% c(".", "-", "n/a", "unk"), NA, snow_cover)) %>% 
+  
+  # change values less than 1 to zero
+  mutate(snow_cover = ifelse(snow_cover == "<1", 0, snow_cover)) %>% 
+  
+  # convert snow cover column to numeric
+  mutate(snow_cover = as.numeric(snow_cover)) %>% 
+  
+  # set incorrect percentages to NA
+  mutate(snow_cover = ifelse(snow_cover > 100, NA, snow_cover))
+
+```
+
+## Clean `water_cover` column
+
+#### Managing NA Values
+
+I wanted to begin by exploring the values in the `water_cover` column. To avoid having lengthy outputs in the rendered document, I have the exploratory chunk set to `eval = FALSE`. The water cover column had many of the same character strings seen in the snow cover, so I followed the same steps to convert them to NA.
+
+```{r, eval=FALSE}
+# check of water cover is correct data type
+class(snowsurvey_clean$water_cover)
+
+# check if it has similar characters for NAs as snow cover
+snowsurvey_clean %>% 
+  filter(water_cover %in% c(".", "-", "n/a", "unk")) %>% 
+  View()
+
+# view values for water cover
+unique(snowsurvey_clean$water_cover)
+```
+
+```{r}
+snowsurvey_clean <- snowsurvey_clean %>% 
+  
+  # convert symbols/text into NAs 
+  mutate(water_cover = ifelse(water_cover %in% c(".", "-", "n/a", "unk"), NA, water_cover)) %>% 
+  
+  # coerce to numeric
+  mutate(water_cover = as.numeric(water_cover))
+```
+
+#### Checking Percentages
+
+Now that the water cover is numeric, I used the maximum and minimum values to see if the range of values was between 0 and 100%. There was only a single value over 100, so I decided to change it to an NA value.
+
+```{r, eval=FALSE}
+# check column type updated
+class(snowsurvey_clean$water_cover)
+
+# confirm numeric values are between 0-100
+min(snowsurvey_clean$water_cover, na.rm = TRUE)
+max(snowsurvey_clean$water_cover, na.rm = TRUE)
+
+# view columns greater than 100
+snowsurvey_clean %>% 
+  filter(water_cover > 100) %>% 
+  head(10)
+```
+
+```{r}
+snowsurvey_clean <- snowsurvey_clean %>% 
+  
+  # change values over 100% to NA
+  mutate(water_cover = ifelse(water_cover > 100, NA, water_cover))
+```
+
+## Clean `land_cover` column
+
+#### Managing NA Values
+
+I wanted to begin by exploring the values in the `water_cover` column. To avoid having lengthy outputs in the rendered document, I have the exploratory chunk set to `eval = FALSE`. The water cover column had many of the same character strings seen in the snow cover, so I followed the same steps to convert them to NA.
